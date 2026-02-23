@@ -10,6 +10,34 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Todo struct {
+	ID        int
+	Name      string
+	Desc      string
+	DueDate   sql.NullString
+	Completed bool
+}
+
+func printTable(db *sql.DB) {
+	rows, err := db.Query(`SELECT id, task_name, task_desc, due_date, completed FROM todos`)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var t Todo
+		rows.Scan(&t.ID, &t.Name, &t.Name, &t.DueDate, &t.Completed)
+
+		// check for valid date
+		if t.DueDate.Valid {
+			fmt.Printf("%d %s %s %s %t\n", t.ID, t.Name, t.Desc, t.DueDate.String, t.Completed)
+		} else {
+			fmt.Printf("%d %s %s %t\n", t.ID, t.Name, t.Desc, t.Completed)
+		}
+	}
+}
+
 func main() {
 	// set accepted flags
 	todoFlag := flag.String("todo", "task", "Create a new todo task with the name provided or updates an existing todo task.")
@@ -36,11 +64,28 @@ func main() {
 	defer db.Close()
 
 	// create table for todos
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS user (
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS todos (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		task_name TEXT NOT NULL
-		task_desc TEXT,
+		task_name TEXT NOT NULL UNIQUE,
+		task_desc TEXT NOT NULL,
 		due_date TEXT,
 		completed INTEGER DEFAULT 0
 	)`)
+
+	// insert or update logic
+	fmt.Println("Inserting todo to table...")
+	_, err = db.Exec(`
+	INSERT INTO todos (task_name, task_desc, due_date, completed)
+	VALUES (?,?,?,?)
+	ON CONFLICT(task_name) DO UPDATE SET
+		task_desc = excluded.task_desc,
+		due_date = excluded.due_date,
+		completed = excluded.completed`,
+		*todoFlag, *descFlag, date.Format("2006-01-02"), *doneFlag)
+
+	// find the inserted row
+	fmt.Println("Finding rows in todos table...")
+	printTable(db)
+
+	fmt.Println("Done.")
 }
