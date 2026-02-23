@@ -1,9 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
+	"log"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -23,4 +27,20 @@ func main() {
 
 	flag.Parse()
 	fmt.Println(*todoFlag, *descFlag, date.Format("2006/01/02"), *doneFlag)
+
+	// create persistent storage with SQLite
+	db, err := sql.Open("sqlite3", "./todos.app")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer db.Close()
+
+	// create table for todos
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS user (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		task_name TEXT NOT NULL
+		task_desc TEXT,
+		due_date TEXT,
+		completed INTEGER DEFAULT 0
+	)`)
 }
