@@ -9,3 +9,4 @@ Want to practice some of the Go concepts I've learned for a basic Todo CLI app.
 - desc -> given description to task the user creates (string)
 - due -> when the task is due (string) (optional)
 - completed -> whether the task is completed or not, when not provided automaitcally set as false (boolean) (optional)
+- run `go run src/main.go -h` for all flags.
